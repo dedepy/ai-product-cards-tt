@@ -67,6 +67,16 @@ def main() -> int:
         print("Требуют уточнения:", product.missing_fields())
         return 0
 
+    if args.output is not None:
+        allowed_extensions = {".json", ".md"}
+
+        if args.output.suffix.lower() not in allowed_extensions:
+            print(
+                "Ошибка: поддерживаются только .json и .md",
+                file=sys.stderr,
+            )
+            return 1
+
     load_dotenv()
 
     api_key = os.getenv("OPENAI_API_KEY", "").strip()

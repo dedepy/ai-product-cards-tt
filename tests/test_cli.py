@@ -1,3 +1,4 @@
+import pytest
 import json
 import sys
 from types import SimpleNamespace
@@ -92,3 +93,68 @@ def test_cli_generation_without_real_api(
     }
 
     assert result["missing_fields"] == []
+
+@pytest.mark.parametrize("extension", [".json", ".md"])
+def test_cli_saves_card_without_api(
+    monkeypatch,
+    tmp_path,
+    extension,
+):
+    product_path = tmp_path / "product.json"
+
+    product_path.write_text(
+        json.dumps(
+            {
+                "name": "Манометр DM 02",
+                "manufacturer": "Манотомь",
+                "specs": {
+                    "класс точности": "1,5"
+                },
+                "description": "Прибор для измерения давления",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    output_path = tmp_path / f"result{extension}"
+
+    monkeypatch.setenv(
+        "OPENAI_API_KEY",
+        "fake-test-key",
+    )
+
+    monkeypatch.setattr(
+        main,
+        "OpenAI",
+        FakeOpenAI,
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "main.py",
+            str(product_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    exit_code = main.main()
+
+    assert exit_code == 0
+    assert output_path.exists()
+
+    content = output_path.read_text(encoding="utf-8")
+
+    if extension == ".json":
+        result = json.loads(content)
+
+        assert result["seo_title"] == "Манометр DM 02"
+        assert result["characteristics"] == {
+            "класс точности": "1,5"
+        }
+    else:
+        assert "# Манометр DM 02" in content
+        assert "## Характеристики" in content
