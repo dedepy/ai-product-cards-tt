@@ -74,3 +74,17 @@ class ProductInput(BaseModel):
                 missing.append(f"specs.{key}")
 
         return missing
+
+
+class GeneratedText(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    seo_title: str
+    seo_description: str
+    search_queries: list[str]
+    commercial_text: str
+
+
+class ProductCard(GeneratedText):
+    characteristics: dict[str, str]
+    missing_fields: list[str]
