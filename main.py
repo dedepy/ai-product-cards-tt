@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from product_cards.generator import generate_card
 from product_cards.models import ProductInput
+from product_cards.export import export_card
 
 
 def main() -> int:
@@ -32,6 +33,13 @@ def main() -> int:
         action="store_true",
         help="Проверить JSON без обращения к LLM",
     )
+
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Путь сохранения карточки (.json или .md)",
+    )
+
 
     args = parser.parse_args()
 
@@ -139,8 +147,24 @@ def main() -> int:
         )
         return 1
 
-    print(card.model_dump_json(indent=2))
+
+    if args.output is not None:
+        try:
+            export_card(card, args.output)
+        except (OSError, ValueError) as exc:
+            print(
+                f"Ошибка сохранения: {exc}",
+                file=sys.stderr,
+            )
+            return 1
+
+        print(f"Карточка сохранена: {args.output}")
+
+    else:
+        print(card.model_dump_json(indent=2))
+
     return 0
+
 
 
 if __name__ == "__main__":
