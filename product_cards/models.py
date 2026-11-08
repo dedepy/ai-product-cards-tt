@@ -85,6 +85,10 @@ class GeneratedText(BaseModel):
     commercial_text: str
 
 
+
 class ProductCard(GeneratedText):
     characteristics: dict[str, str]
     missing_fields: list[str]
+    validation_warnings: list[str] = Field(
+        default_factory=list
+    )

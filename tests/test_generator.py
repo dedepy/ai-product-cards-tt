@@ -4,6 +4,7 @@ import pytest
 
 from product_cards.generator import generate_card
 from product_cards.models import GeneratedText, ProductInput
+from product_cards.quality import CardQualityError
 
 
 class FakeResponses:
@@ -80,6 +81,37 @@ def test_empty_llm_result():
     product = ProductInput(name="Манометр")
 
     with pytest.raises(RuntimeError):
+        generate_card(
+            product=product,
+            client=client,
+            model="test-model",
+        )
+
+
+def test_generator_adds_quality_warning():
+    client = FakeClient(make_generated_text())
+
+    product = ProductInput(name="Манометр")
+
+    card = generate_card(
+        product=product,
+        client=client,
+        model="test-model",
+    )
+
+    assert len(card.validation_warnings) == 1
+    assert "SEO-описание" in card.validation_warnings[0]
+
+
+def test_generator_rejects_invalid_title():
+    generated = make_generated_text().model_copy(
+        update={"seo_title": "М" * 71}
+    )
+
+    client = FakeClient(generated)
+    product = ProductInput(name="Манометр")
+
+    with pytest.raises(CardQualityError):
         generate_card(
             product=product,
             client=client,

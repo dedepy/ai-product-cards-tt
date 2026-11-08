@@ -1,3 +1,4 @@
+
 from openai import OpenAI
 
 from product_cards.models import (
@@ -6,6 +7,7 @@ from product_cards.models import (
     ProductInput,
 )
 from product_cards.prompts import SYSTEM_PROMPT
+from product_cards.quality import validate_generated_text
 
 
 def generate_card(
@@ -34,13 +36,19 @@ def generate_card(
             "LLM не вернула структурированный результат"
         )
 
+    # Проверяем качество сгенерированного текста
+    warnings = validate_generated_text(generated)
+
+    # Берём характеристики только из входных данных
     characteristics = {
         key: value if value is not None else "данных нет"
         for key, value in product.specs.items()
     }
 
+    # Формируем итоговую карточку товара
     return ProductCard(
         **generated.model_dump(),
         characteristics=characteristics,
         missing_fields=product.missing_fields(),
+        validation_warnings=warnings,
     )
